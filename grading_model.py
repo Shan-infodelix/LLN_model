@@ -2,7 +2,7 @@ from sentence_transformers import SentenceTransformer, util
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-model = SentenceTransformer("./local_sbert_model")
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def tfidf_score(correct, student):
     vectorizer = TfidfVectorizer()
