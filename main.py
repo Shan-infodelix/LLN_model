@@ -20,6 +20,6 @@ def grade_answer(data: AnswerRequest, x_api_key: str = Header(None)):
     if x_api_key != API_KEY:
         raise HTTPException(status_code=403, detail="Unauthorized")
 
-    score = final_score(data.correct_answer, data.student_answer)
+    score = final_score(data.sample_answer, data.student_answer)
     return {"score": score}
 
