@@ -17,8 +17,9 @@ def tfidf_score(correct, student):
     return score
 
 def sbert_score(correct, student):
-    emb1 = model.encode(correct, convert_to_tensor=True)
-    emb2 = model.encode(student, convert_to_tensor=True)
+    m = load_model()
+    emb1 = m.encode(correct, convert_to_tensor=True)
+    emb2 = m.encode(student, convert_to_tensor=True)
     return util.cos_sim(emb1, emb2).item()
 
 def final_score(correct, student):
