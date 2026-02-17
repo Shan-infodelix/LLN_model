@@ -5,3 +5,7 @@ scikit-learn
 torch
 language-tool-python
 python-dotenv
+fastapi
+uvicorn
+scikit-learn
+pydantic
