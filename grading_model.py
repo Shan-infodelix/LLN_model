@@ -8,7 +8,12 @@ import language_tool_python
 from sentence_transformers import SentenceTransformer, CrossEncoder, util
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import requests
+import json
+import os
+from dotenv import load_dotenv
 
+load_dotenv() 
 
 
 def clean_text(text):
@@ -40,9 +45,66 @@ def remove_stopwords(text):
 
 
 
+def generate_sample_answer_prompt(question, answer_guide):
+    
+    prompt = f"""
+You are a subject-matter expert and academic examiner.
 
-def llm_api(question,answer_guide,student_ans):
-  pass
+Question:
+{question}
+
+Answer Guide:
+{answer_guide}
+
+Task:
+Generate a high-quality model answer suitable for full marks (100%).
+
+Instructions:
+- The answer must fully satisfy the answer guide.
+- Cover all key concepts mentioned in the guide.
+- Maintain academic tone and clarity.
+- Keep the answer concise but complete.
+- Do NOT include explanations about the task.
+- Do NOT mention that this is a generated answer.
+- Return only the final model answer text.
+
+Model Answer:
+"""
+    
+    return prompt
+
+
+def llm_api(question,answer_guide):
+
+    prompt = generate_sample_answer_prompt(question,answer_guide)
+    load_dotenv()
+
+    API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+    response = requests.post(
+        url="https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {API_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": "openrouter/aurora-alpha",
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "reasoning": {"enabled": True},
+            "temperature": 0.3  # more deterministic academic output
+        }
+    )
+
+    if response.status_code != 200:
+        raise Exception(f"LLM API Error: {response.text}")
+
+    result = response.json()
+
+    sample_answer = result["choices"][0]["message"]["content"].strip()
+
+    return sample_answer
 # ===============================
 # GLOBAL MODELS (Load once)
 # ===============================
@@ -128,7 +190,7 @@ def grammar_score(text):
 def final_score(sample_ans, student_ans,question,answer_guid):
     is_sample = False
     if(sample_ans == ""):
-        sample_ans = llm_api(question,answer_guid,student_ans)
+        sample_ans = llm_api(question,answer_guid)
         is_sample = True
     load_models()
     ans1 = clean_text(sample_ans)

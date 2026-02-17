@@ -4,3 +4,4 @@ sentence-transformers
 scikit-learn
 torch
 language-tool-python
+python-dotenv
