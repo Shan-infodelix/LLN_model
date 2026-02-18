@@ -12,6 +12,9 @@ import requests
 import json
 import os
 from dotenv import load_dotenv
+import torch
+import torch.nn.functional as F
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 load_dotenv() 
 
@@ -109,22 +112,63 @@ def llm_api(question,answer_guide):
 # GLOBAL MODELS (Load once)
 # ===============================
 
-sbert_model = None
+instructor_model = None
 cross_model = None
 grammar_tool = None
+deberta_model = None
+deberta_tokenizer = None
 
 
 def load_models():
-    global sbert_model, cross_model, grammar_tool
+    global instructor_model, cross_model, grammar_tool,deberta_model,deberta_tokenizer
 
-    if sbert_model is None:
-        sbert_model = SentenceTransformer("all-MiniLM-L6-v2")
+    if instructor_model is None:
+        instructor_model = SentenceTransformer("hkunlp/instructor-xl")
 
     if cross_model is None:
         cross_model = CrossEncoder("cross-encoder/stsb-roberta-base")
 
     if grammar_tool is None:
         grammar_tool = language_tool_python.LanguageTool('en-US')
+
+    if deberta_model is None:
+        # Load tokenizer and model
+        deberta_model_name = "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli"
+        deberta_tokenizer = AutoTokenizer.from_pretrained(deberta_model_name)
+        deberta_model = AutoModelForSequenceClassification.from_pretrained(deberta_model_name)
+        deberta_model.eval()
+
+
+# ===============================
+# deberta_nli_score
+# ===============================
+
+def deberta_nli_score(sample_answer, student_answer):
+
+    inputs = deberta_tokenizer(
+        sample_answer,
+        student_answer,
+        return_tensors="pt",
+        truncation=True,
+        padding=True,
+        max_length=512
+    )
+
+    with torch.no_grad():
+        outputs = deberta_model(**inputs)
+
+    probs = F.softmax(outputs.logits, dim=1)[0]
+
+    label_map = deberta_model.config.label2id
+
+    entailment = probs[label_map["entailment"]].item()
+    neutral = probs[label_map["neutral"]].item()
+    contradiction = probs[label_map["contradiction"]].item()
+
+    # Better scoring logic
+    score = entailment + 0.5*neutral-0.25*contradiction
+
+    return score
 
 
 # ===============================
@@ -133,20 +177,33 @@ def load_models():
 
 def tfidf_score(sample_ans, student_ans):
       # Additional preprocessing ONLY for TF-IDF
-    tf_correct = remove_stopwords(sample_ans)
+    tf_sample = remove_stopwords(sample_ans)
     tf_student = remove_stopwords(student_ans)
     vectorizer = TfidfVectorizer(stop_words="english")
-    tfidf = vectorizer.fit_transform([tf_correct, tf_student])
+    tfidf = vectorizer.fit_transform([tf_sample, tf_student])
     return cosine_similarity(tfidf[0:1], tfidf[1:2])[0][0]
 
 
 # ===============================
-# SBERT Score
+# semantic_score
 # ===============================
 
-def sbert_score(sample_ans, student_ans):
-    emb1 = sbert_model.encode(sample_ans, convert_to_tensor=True)
-    emb2 = sbert_model.encode(student_ans, convert_to_tensor=True)
+def instructor_score(sample_ans, student_ans):
+
+    instruction = "Represent the answer for grading comparison:"
+
+    emb1 = instructor_model.encode(
+        [[instruction, sample_ans]],
+        convert_to_tensor=True,
+        normalize_embeddings=True
+    )
+
+    emb2 = instructor_model.encode(
+        [[instruction, student_ans]],
+        convert_to_tensor=True,
+        normalize_embeddings=True
+    )
+
     return util.cos_sim(emb1, emb2).item()
 
 
@@ -197,29 +254,37 @@ def final_score(sample_ans, student_ans,question,answer_guid):
     ans2 = clean_text(student_ans)
 
     t = tfidf_score(ans1, ans2)
-    s = sbert_score(ans1, ans2)
+    s = instructor_score(ans1, ans2)
+    d = deberta_nli_score(sample_ans, student_ans)
     c = cross_score(ans1, ans2)
     r = rubric_score(ans1, ans2)
     g = grammar_score(student_ans)
 
     # Weighted industrial formula
-    final = (
-        0.25 * s +
-        0.25 * c +
-        0.15 * t +
-        0.20 * r +
-        0.15 * g
-    ) * 100
 
-    confidence = min(100, abs(s - c) * 100)
+    final = (
+        0.30 * s +
+        0.25 * c +
+        0.15 * d +
+        0.10 * t +
+        0.10 * r +
+        0.10 * g
+    ) * 100
+    if(c < 0.15):
+        final = 0
+        s = c
+    features = [s, c, d]
+    variance = np.var(features)
+    confidence = (1 - variance) * 100
     response = {
-            "final_score": round(final, 2),
-            "semantic_score": round(s * 100, 2),
-            "cross_score": round(c * 100, 2),
-            "tfidf_score": round(t * 100, 2),
-            "rubric_score": round(r * 100, 2),
-            "grammar_score": round(g * 100, 2),
-            "confidence": round(confidence, 2)
+          "final_score": round(final, 2),
+          "semantic_score": round(s * 100, 2),
+          "cross_score": round(c * 100, 2),
+          "deberta_model_score": round(d * 100,2),
+          "tfidf_score": round(t * 100, 2),
+          "rubric_score": round(r * 100, 2),
+          "grammar_score": round(g * 100, 2),
+          "confidence": round(confidence, 2)
         }
     if is_sample:
         response["sample ans"] = sample_ans

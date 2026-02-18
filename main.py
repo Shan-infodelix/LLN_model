@@ -2,6 +2,8 @@ import os
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 from grading_model import final_score, load_models
+from dotenv import load_dotenv
+load_dotenv() 
 
 app = FastAPI()
 
@@ -17,7 +19,7 @@ class AnswerRequest(BaseModel):
     answer_Guide: str
 
 # Read API key from environment variable
-API_KEY = "your_secret_key"
+API_KEY = os.getenv("MY_KEY")
 
 @app.get("/")
 def root():
