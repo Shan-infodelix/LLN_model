@@ -1,259 +1,294 @@
-# Subjective Answer Auto Scoring System (V2.0)
+# SWIFTLLN: Subjective Answer Auto-Scoring Model V2.0
 
-An **AI-powered system for automatic evaluation of subjective answers** using Natural Language Processing and Transformer-based models.
+SWIFTLLN is an **AI-powered automated grading system for subjective answers** designed for scalable educational platforms.
+It evaluates descriptive student responses using a **multi-model ensemble architecture** and continuously improves through **trainer feedback and adaptive retraining**.
 
-The system predicts whether a student's answer is **correct or incorrect**, assigns a score, and continuously improves using **trainer feedback and automated retraining**.
+The system integrates semantic similarity models, transformer-based evaluation, statistical methods, rubric analysis, and grammar scoring to produce an accurate prediction of whether an answer is **correct or incorrect**.
 
----
-
-# Overview
-
-Evaluating subjective answers manually is time-consuming and inconsistent.
-This project automates the evaluation process using **multiple NLP models and feature engineering techniques**.
-
-The system combines:
-
-* Semantic similarity
-* Cross Encoder scoring
-* DeBERTa classification
-* TF-IDF similarity
-* Grammar evaluation
-* Rubric scoring
-
-The final score is calculated using a **weighted logistic scoring system**.
+The model acts as the **backend evaluation engine for the SWIFTLLN assessment platform**.
 
 ---
 
-# Key Features
+# Project Overview
 
-* Automatic subjective answer evaluation
-* Multi-model NLP scoring pipeline
-* Weighted scoring system
-* Trainer feedback system
-* Continuous model improvement
-* Automatic retraining
-* Model version control
-* Production-ready ML pipeline
+Evaluating subjective answers manually is:
 
----
+* time-consuming
+* inconsistent
+* difficult to scale
 
-# Project Structure
+SWIFTLLN V2.0 solves this problem by implementing an **adaptive automated grading framework** that combines multiple NLP models with a meta-learning layer.
 
-```
-LLM_MODEL
-│
-├── app
-│   ├── feature_engineering.py
-│   ├── LLM_service.py
-│   ├── load_models.py
-│   ├── main.py
-│   └── score.py
-│
-├── database
-│   ├── db.py
-│   └── prepare_dataset.py
-│
-├── models
-│   ├── cross_v1
-│   ├── deberta_v1
-│   ├── weights_v1.json
-│   ├── current_version.json
-│   └── __init__.py
-│
-├── models_training
-│   ├── train_cross.py
-│   ├── train_deberta.py
-│   ├── train_pipeline.py
-│   └── train_weight.py
-│
-├── checkpoints
-│
-├── init_models.py
-├── requirements.txt
-├── .gitignore
-└── README.md
-```
+The system evaluates answers based on:
+
+* semantic understanding
+* contextual alignment
+* logical correctness
+* keyword coverage
+* grammatical quality
+
+Each evaluation module produces a score which is combined using a **logistic regression meta-learner** to produce the final prediction.
 
 ---
 
-# Model Architecture
+# Key Capabilities
 
-The scoring system generates multiple features from a student's answer.
+• Automated subjective answer grading
+• Multi-model NLP scoring pipeline
+• Logistic regression meta-learning
+• Batch API processing
+• Trainer feedback correction system
+• Continuous model retraining
+• Controlled model deployment strategy
+• Model version management
+• LLM fallback for missing reference answers
 
-### Feature Extraction
+---
 
-* Semantic similarity score
-* Cross Encoder similarity
-* DeBERTa inference score
-* TF-IDF similarity
-* Rubric score
-* Grammar score
+# System Architecture
 
-### Scoring Formula
+The architecture follows a modular pipeline:
 
-Final score is computed using weighted scoring:
+```text
+API Request
+     │
+     ▼
+Authentication Layer
+     │
+     ▼
+Multi-Model Scoring Engine
+     │
+     ▼
+Feature Vector Construction
+     │
+     ▼
+Logistic Regression Meta-Learner
+     │
+     ▼
+Probability Prediction
+     │
+     ▼
+Database Storage
+     │
+     ▼
+Trainer Feedback API
+     │
+     ▼
+Retraining Pipeline
+     │
+     ▼
+Model Comparison
+     │
+     ▼
+Production Deployment
+```
+
+This architecture enables **continuous learning and controlled improvement of model accuracy**.
+
+---
+
+# Multi-Model Scoring Engine
+
+The system evaluates answers using six independent modules:
+
+| Module                              | Purpose                       |
+| ----------------------------------- | ----------------------------- |
+| Semantic Similarity (Instructor-XL) | Measures conceptual alignment |
+| Cross-Encoder                       | Contextual pair evaluation    |
+| DeBERTa (NLI)                       | Logical inference validation  |
+| TF-IDF Similarity                   | Statistical text similarity   |
+| Rubric Scoring                      | Domain keyword coverage       |
+| Grammar Evaluation                  | Linguistic correctness        |
+
+Each module produces a normalized score:
 
 ```
-score = Σ(weight_i × feature_i) + bias
+si ∈ [0,1]
 ```
 
-Weights are stored in:
+These scores form the feature vector used by the meta-learning model.
+
+---
+
+# Feature Vector
+
+The system constructs a structured feature vector:
 
 ```
-models/weights_v1.json
+X = [semantic, cross, deberta, tfidf, rubric, grammar,
+     mode_strict, mode_moderate, mode_light]
 ```
+
+Grading modes are encoded using **one-hot encoding**.
+
+---
+
+# Logistic Regression Meta-Learner
+
+Instead of manually assigning weights, Version 2.0 learns optimal weights using logistic regression.
+
+Linear model:
+
+```
+z = Σ(wi * xi) + b
+```
+
+Probability calculation:
+
+```
+P(y=1) = 1 / (1 + e^-z)
+```
+
+Prediction rule:
+
+```
+Correct if P(y=1) > 0.5
+Otherwise Incorrect
+```
+
+This probabilistic framework improves interpretability and adaptive learning.
 
 ---
 
 # Continuous Learning Pipeline
 
-The system uses a **Human-in-the-Loop training pipeline**.
+SWIFTLLN uses a **Human-in-the-Loop learning system**.
 
 ### Workflow
 
-1. Student submits an answer.
-2. The model predicts whether the answer is **correct or incorrect**.
-3. A trainer reviews the prediction.
-4. Trainer feedback is stored in the database.
-5. Each feedback becomes a **new labeled training datapoint**.
-6. When dataset size reaches a predefined **batch threshold**, training is triggered automatically.
-7. A new model is trained using updated data.
-8. The new model is compared with the **current production model**.
+1. Student answer is evaluated by the model.
+2. Prediction and sub-scores are stored in the database.
+3. Trainer reviews the result.
+4. Trainer may override the prediction.
+5. Trainer feedback becomes new training data.
 
-### Model Replacement Logic
-
-If the new model performs **better**:
-
-* Deploy the new model
-* Update version control
-
-If performance is **worse**:
-
-* Ignore the new model
-* Keep the current model
-
-The same process applies to **logistic regression weight optimization**.
+When enough feedback samples accumulate, the system triggers retraining.
 
 ---
 
-# Continuous Learning Architecture
+# Training Trigger Logic
+
+Retraining is activated when:
 
 ```
-Student Answer
-      │
-      ▼
-Model Prediction
-      │
-      ▼
-Trainer Verification
-      │
-      ▼
-Feedback Stored in Database
-      │
-      ▼
-Dataset Growth
-      │
-      ▼
-Batch Threshold Reached
-      │
-      ▼
-Automatic Training Trigger
-      │
-      ▼
-New Model Evaluation
-      │
- ┌───────────────┐
- │ Performance   │
- │ Comparison    │
- └───────────────┘
-      │
- ┌────┴────┐
- ▼         ▼
-Better     Worse
-Model      Model
- ▼          ▼
-Deploy      Ignore
+Untrained Feedback Samples ≥ Threshold
 ```
+
+Training pipeline:
+
+1. Fetch untrained feedback data
+2. Merge with historical training dataset
+3. Fine-tune cross-encoder model
+4. Recalculate logistic regression weights
+5. Evaluate new model performance
 
 ---
 
-# Model Initialization
+# Controlled Model Deployment
 
-Before running the system, initialize the models.
+To maintain stability, the system compares the **new model** with the **current production model**.
 
-Run:
+If:
 
 ```
-python init_models.py
+New Model Performance > Current Model
 ```
 
-This script will:
+Then:
 
-* Download the Cross Encoder model
-* Download the DeBERTa model
-* Create initial scoring weights
-* Create the version control configuration
+* Update model version
+* Deploy new model
+
+Otherwise:
+
+* Discard update
+* Keep existing model
+
+This prevents performance degradation in production systems.
 
 ---
 
-# Running the System
+# LLM Fallback Reference Answer Generation
 
-Install dependencies:
+If a reference answer is missing, the system automatically generates one using an LLM.
 
-```
-pip install -r requirements.txt
-```
-
-Initialize models:
+Condition:
 
 ```
-python init_models.py
+if sample_answer == None
 ```
 
-Run the application:
+Then:
 
 ```
-python app/main.py
+reference_answer = LLM(question)
 ```
+
+This ensures the grading pipeline always has a reference answer for evaluation.
 
 ---
 
-# Model Version Control
+# Database Architecture
 
-Model versions are managed using:
+The system uses a relational database to support continuous learning.
 
-```
-models/current_version.json
-```
+Main tables:
 
-Example configuration:
+| Table             | Purpose                                 |
+| ----------------- | --------------------------------------- |
+| Question          | Stores question metadata                |
+| Student Answer    | Stores student responses                |
+| Model Score       | Stores model predictions and sub-scores |
+| Trainer Score     | Stores human corrections                |
+| Training Metadata | Tracks training runs                    |
+| Cross Model       | Stores cross-encoder versions           |
+| Weight Model      | Stores logistic regression weights      |
 
-```
+This design supports **traceability, retraining, and version management**.
+
+---
+
+# API Input Format
+
+Example batch request:
+
+```json
 {
-  "cross": "cross_v1",
-  "deberta": "deberta_v1",
-  "weights": "weights_v1.json"
+ "submissions":[
+  {
+   "question_id":"Q1",
+   "question":"Explain photosynthesis",
+   "student_answer_id":"A1",
+   "student_answer":"Plants produce energy using sunlight",
+   "sample_answer":"...",
+   "grading_mode":"moderate"
+  }
+ ]
 }
 ```
 
-This allows easy switching between model versions.
-
 ---
 
-# Training System
+# API Response Format
 
-Training scripts are located in:
-
+```json
+{
+ "results":[
+  {
+   "question_id":"Q1",
+   "student_answer_id":"A1",
+   "final_prediction":"Correct",
+   "probability":0.87,
+   "semantic_score":0.82,
+   "cross_score":0.91,
+   "deberta_score":0.88,
+   "tfidf_score":0.76,
+   "rubric_score":0.80,
+   "grammar_score":0.90
+  }
+ ]
+}
 ```
-models_training/
-```
-
-Available training components:
-
-* Cross Encoder fine-tuning
-* DeBERTa fine-tuning
-* Logistic regression weight optimization
-* Training pipeline automation
 
 ---
 
@@ -262,27 +297,40 @@ Available training components:
 * Python
 * HuggingFace Transformers
 * Sentence Transformers
+* DeBERTa NLI models
 * Scikit-learn
-* NLP feature engineering
 * TF-IDF
-* Logistic scoring models
+* Logistic Regression
+* NLP Feature Engineering
+* REST APIs
+
+---
+
+# Applications
+
+The system can be deployed in:
+
+* Universities
+* Online examination platforms
+* EdTech platforms
+* Corporate training systems
+* Learning Management Systems
 
 ---
 
 # Future Improvements
 
-* Explainable scoring system
-* Answer feedback generation
-* Instructor analytics dashboard
-* Rubric auto-generation
-* Model monitoring system
+• Multi-class scoring (not just binary correct/incorrect)
+• Multilingual answer evaluation
+• Explainable AI feedback for students
+• Automated rubric extraction
+• Instructor analytics dashboard
 
 ---
 
 # Author
 
 SHAN
+AI/ML Intern — INFODELIX
 
-AI / NLP Project
-
-Subjective Answer Auto Scoring System V2.0
+Project: **SWIFTLLN: Subjective Answer Auto-Scoring Model V2.0**
