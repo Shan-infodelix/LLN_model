@@ -9,3 +9,7 @@ fastapi
 uvicorn
 scikit-learn
 pydantic
+tiktoken
+mysql-connector-python
+datasets
+accelerate>=1.1.0

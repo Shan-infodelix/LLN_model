@@ -1,5 +1,46 @@
-venv/
-__pycache__/
+# Python cache
+
+**pycache**/
 *.pyc
-local_sbert_model/
+*.pyo
+*.pyd
+
+# Virtual environment
+
+venv/
+env/
+.venv/
+
+# Environment variables
+
 .env
+
+# VSCode
+
+.vscode/
+
+# Ignore everything inside models
+
+models/*
+
+# But keep this file
+
+!models/**init**.py
+
+# Training checkpoints
+
+checkpoints/
+
+# Logs
+
+*.log
+
+# Temporary files
+
+*.tmp
+*.temp
+
+# OS files
+
+.DS_Store
+Thumbs.db
