@@ -7,7 +7,7 @@ from models_training.train_weight import train_weight_layer
 from database.prepare_dataset import mark_samples_as_trained, save_training_metadata,fetch_previous_trained_samples,save_cross_model_metrics,save_weight_model_metrics
 import json
 
-BATCH_SIZE = 25
+BATCH_SIZE = 1000
 
 
 
