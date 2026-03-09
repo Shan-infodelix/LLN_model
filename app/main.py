@@ -102,7 +102,7 @@ class BatchFeedbackRequest(BaseModel):
 
 
 
-BATCH_SIZE = 25
+BATCH_SIZE = 1000
 
 
 # Launches the model training pipeline as a separate background process.
