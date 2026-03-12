@@ -127,13 +127,13 @@ def trainer_feedback(data: BatchFeedbackRequest, x_api_key: str = Header(None)):
         )
 
     # 2️⃣ Check untrained sample count
-    count = get_untrained_sample_count()
+    # count = get_untrained_sample_count()
 
     # 3️⃣ Trigger training if threshold reached
-    if count >= BATCH_SIZE:
-        trigger_training_worker()
+    # if count >= BATCH_SIZE:
+    #     trigger_training_worker()
 
-    return {
-        "message": "Trainer feedback stored successfully",
-        "untrained_samples": count
-    }
+    # return {
+    #     "message": "Trainer feedback stored successfully",
+    #     "untrained_samples": count
+    # }
